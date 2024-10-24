@@ -1,4 +1,4 @@
-#INFORMATION
+#INFORMATION -- This is just confirmation that Github is working
 """
 Developer: Jesse Read
 GitHub: JesseReadAu
