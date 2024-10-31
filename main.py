@@ -2,7 +2,7 @@
 """
 Developer: Jesse Read
 GitHub: JesseReadAu
-Last Update: 2024/10/29
+Last Update: 2024/10/31
 Notes:  This is a RESTful backend being developed for the company IR as a proof of concept. It is interacted with
         from a REACT front end application.
 """
@@ -10,12 +10,15 @@ Notes:  This is a RESTful backend being developed for the company IR as a proof 
 
 from flask import Flask, request, session, Response, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import text
+from sqlalchemy import text, delete
 import json
 from hashlib import sha256
 from models.users import Users
+from models.assets import Assets
+from models.project_assets import Project_Assets
+from models.projects import Projects
 from db import db
-from datetime import datetime, timedelta, datetime, date
+from datetime import datetime, timedelta, date
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = "mysql+mysqlconnector://root@localhost/ir_db"
@@ -28,19 +31,49 @@ if __name__ == "__name__":
         db.create_all()
     app.run()
 
-# TODO: Incomplete
-@app.get("/login")
-def login():
-    email    = request.args.get("login")
-    found_usr = Users.query.filter_by(email=email).first()
-    if found_usr:
-        print("Already username with that name")
-    else:
-        usr = Users(login_name, "")
-        db.session.add(usr)
-        db.session.commit()
-        print("Hello new user " + login_name)
-    return "yes", 400
+
+
+"""
+ASSETS
+"""
+@app.get("/assets")
+def get_all_assets():
+    result = Assets.query.all()
+    asset_dict = {
+        row.id: {
+            "id": row.id,
+            "name": row.name,
+            "category": row.category,
+            "filetype": row.filetype,
+            "filesize": row.filesize,
+            "link": row.link,
+            "screenshot": row.screenshot,
+            "user_id": row.user_id
+        } for row in result
+    }
+    return jsonify(asset_dict), 200
+
+
+"""
+PROJECTS
+"""
+@app.get("/projects")
+def get_all_projects():
+    result = Projects.query.all()
+    project_dict = {
+        row.id: {
+            "id": row.id,
+            "name": row.name,
+            "category": row.category,
+            "filetype": row.filetype,
+            "filesize": row.filesize,
+            "link": row.link,
+            "screenshot": row.screenshot,
+            "user_id": row.user_id
+        } for row in result
+    }
+    return jsonify(project_dict), 200
+
 """
 USER
 """
@@ -89,6 +122,44 @@ def patch_user(user_id):
 
     return jsonify(result_dict), 200
 
+# Delete a user from the Users database.
+@app.delete("/user/<int:user_id>")
+def delete_user(user_id):
+    user = Users.query.get(user_id)
+
+    if not user:
+        return jsonify({"message": f"User with ID {user_id} not found"}), 404
+
+    try:
+        db.session.delete(user)
+        db.session.commit()
+        return jsonify({"message": f"User with ID {user_id} deleted successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Failed to delete user: {str(e)}"}), 500
+
+# Add a new user to the Users database, requires only first_name, second_name, email and password.
+@app.post("/user")
+def add_new_user():
+    try:
+        data = request.get_json()
+
+        first_name = data.get("first_name") or ""
+        last_name = data.get("last_name") or ""
+        email = data.get("email")
+        password = sha256(data.get("password").encode("utf-8")).hexdigest()
+
+
+        if not email and password:
+            return jsonify({"message": "Email and Password are required"}), 400
+
+        new_user = Users(first_name=first_name, last_name=last_name, email=email, password=password)
+        db.session.add(new_user)
+        db.session.commit()
+        return jsonify({"message": "New user added"}), 201
+    except Exception as e:
+        return jsonify({"message": "User not added"}), 404
+    pass
 
 """
 USERS
@@ -171,16 +242,23 @@ def register_user():
 #PROJECTS
 
 
-#ASSETS
 
 
-#SEARCH
+"""
+SEARCH
+"""
+# TODO: Create Methods
+# Return all projects or assets
+@app.get('/search/<search_string>')
+def get_search(search_string):
+    pass
+
 
 """
 OTHER METHODS
 """
 # TODO: THIS NEEDS TO BE TESTED - NO TESTING DONE. ORM
-#Validat
+#Validate
 def Validate_User():
     # Check for Session
     data = request.get_json()
@@ -188,6 +266,7 @@ def Validate_User():
         print("User Login Check")
         #Check session against DB
         result = Users.query.filter_by(session=data['session']).first()
+        #If there is a session and the date is the same return true, else destroy db session ID
         if isinstance(result.last_login, date):
             return True
         else:
