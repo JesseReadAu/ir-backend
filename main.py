@@ -2,7 +2,7 @@
 """
 Developer: Jesse Read
 GitHub: JesseReadAu
-Last Update: 2024/10/31
+Last Update: 2024/11/03
 Notes:  This is a RESTful backend being developed for the company IR as a proof of concept. It is interacted with
         from a REACT front end application.
 """
@@ -66,19 +66,15 @@ def auth_required(func):
 
     return wrapper
 
+
+
 """""""""""""""""""""""""""""""""
 ASSET
 """""""""""""""""""""""""""""""""
-# DELETE an asset from the asset database.
+# DELETE an asset from the assets table.
 @app.delete("/asset/<int:asset_id>")
 @auth_required
 def delete_asset(asset_id):
-    """
-    # Authenticate and Authorise the request
-    authenticate, response = validate_user()
-    if not authenticate:
-        return response
-    """
     asset = Assets.query.get(asset_id)
 
     if not asset:
@@ -92,8 +88,7 @@ def delete_asset(asset_id):
         db.session.rollback()
         return jsonify({"error": f"Failed to delete asset: {str(e)}"}), 500
 
-
-#PATCH a record in the assets database.
+#PATCH a record in the assets table.
 @app.patch("/asset/<int:asset_id>")
 @auth_required
 def patch_asset(asset_id):
@@ -123,7 +118,7 @@ def patch_asset(asset_id):
 
     return jsonify("Asset updated"), 200
 
-# Add a new user to the Users database, requires only first_name, second_name, email and password.
+# Add a new asset to the assets table.
 @app.post("/asset")
 @auth_required
 def add_new_asset():
@@ -149,6 +144,8 @@ def add_new_asset():
         return jsonify({"message": "Asset not added - " + str(e)}), 404
     pass
 
+
+
 """""""""""""""""""""""""""""""""
 ASSETS
 """""""""""""""""""""""""""""""""
@@ -170,8 +167,10 @@ def get_all_assets():
     }
     return jsonify(asset_dict), 200
 
+
+
 """""""""""""""""""""""""""""""""
-LOGIN AND LOGOUT - USER
+LOGIN, LOGOUT, REGISTER - USER
 """""""""""""""""""""""""""""""""
 # Attempt to provide a user a SessionID based on their login credentials.
 @app.put("/user/login")
@@ -182,7 +181,7 @@ def try_to_login():
 
             pass_hashed = sha256(data["password"].encode("utf-8")).hexdigest()
 
-            #TODO: CHECK LOGIN DETAILS
+            # TODO: CHECK LOGIN DETAILS
             # This Session is a test session generated id, an update is required before live.
             session_id = sha256(("TestSessionID_" + data["email"]).encode("utf-8")).hexdigest()
 
@@ -191,7 +190,7 @@ def try_to_login():
             if not result:
                 return jsonify({"message": "Invalid Login"}), 400
 
-            #TODO: ORM
+            #TODO: ORM?
             #Update database user with session
             db.session.execute(
                 text("UPDATE users SET session = :session_id, last_login= :last_login WHERE email = :email AND password = :pass_hashed"),
@@ -206,7 +205,7 @@ def try_to_login():
     else:
         return jsonify({"message": "Empty Input"}), 400
 
-#Logs a user out based on the id in the users table
+# Logs a user out based on the id in the users table.
 @app.put("/user/logout")
 @auth_required
 def log_user_out():
@@ -222,10 +221,167 @@ def log_user_out():
     else:
         return jsonify({"message": "Invalid Input"}), 400
 
+# Register a user into the users table.
+#TODO: Registrations needs to be tested.
+@app.post("/user/register")
+def register_user():
+    if request.data:
+        data = request.get_json()
+
+        if data.get("email") and data.get("password"):
+            # Hash the password
+            pass_hashed = sha256(data["password"].encode("utf-8")).hexdigest()
+
+            # Check if the email is already registered
+            existing_user = Users.query.filter_by(email=data.get("email")).first()
+            if existing_user:
+                return jsonify({"message": "Email already registered"}), 400
+
+            # Create a new user and add to the database
+            new_user = Users(
+            first_name = data.get("first_name", ""),
+            last_name = data.get("last_name", ""),
+            email = data["email"],
+            password = pass_hashed,
+            )
+
+            db.session.add(new_user)
+            db.session.commit()
+
+            return jsonify({"message": "User registered successfully!"}), 201
+        else:
+            return jsonify({"message": "Invalid Input"}), 400
+    else:
+        return jsonify({"message": "An email and password are required"}), 400
+
+
+
 """""""""""""""""""""""""""""""""
 PROJECT
 """""""""""""""""""""""""""""""""
+# DELETE a project from the projects table.
+@app.delete("/project/<int:project_id>")
+@auth_required
+def delete_project(project_id):
 
+    asset = Assets.query.get(project_id)
+
+    if not asset:
+        return jsonify({"message": f"Project with ID {project_id} not found"}), 404
+
+    try:
+        db.session.delete(asset)
+        db.session.commit()
+        return jsonify({"message": f"Project with ID {project_id} deleted successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Failed to delete project: {str(e)}"}), 500
+
+#PATCH a project in the projects table.
+@app.patch("/project/<int:project_id>")
+@auth_required
+def patch_project(project_id):
+    result = Projects.query.filter_by(id=project_id).first()
+
+    if not result:
+        return Response("No project found", 404)
+
+    data = request.get_json()
+
+    if "name" in data:
+        result.name = data["name"]
+    if "type" in data:
+        result.category = data["type"]
+    if "client" in data:
+        result.filetype = data["filetype"]
+    if "data_start" in data:
+        result.filesize = data["filesize"]
+    if "date_end" in data:
+        result.link = data["link"]
+    if "user_id" in data:
+        result.user_id = data["user_id"]
+
+    db.session.commit()
+
+    return jsonify("Project updated"), 200
+
+# Add a new project to the projects table.
+@app.post("/project")
+@auth_required
+def add_new_project():
+    try:
+        data = request.get_json()
+
+        name = data.get("name")
+        type = data.get("type") or ""
+        client = data.get("client") or ""
+        data_start = data.get("data_start") or ""
+        date_end = data.get("date_end") or ""
+        user_id = data.get("user_id") or ""
+
+        if not name:
+            return jsonify({"message": "Project name required"}), 400
+
+        new_project = Projects(name=name, type=type, client=client, data_start=data_start, date_end=date_end, user_id=user_id)
+        db.session.add(new_project)
+        db.session.commit()
+        return jsonify({"message": "New project added"}), 201
+    except Exception as e:
+        return jsonify({"message": "Project not added - " + str(e)}), 404
+    pass
+
+
+
+"""""""""""""""""""""""""""""""""
+PROJECT_ASSETS
+"""""""""""""""""""""""""""""""""
+# TODO: All project_assets methods have not been tested yet.
+# Add a new record into the project_assets table.
+@app.post("/project-assets/<int:project>/<int:asset>")
+@auth_required
+def add_new_project_assets(project, asset):
+    try:
+        project_assets = Project_Assets(project, asset)
+        db.session.add(project_assets)
+        db.session.commit()
+        return jsonify({"message": "The project_assets data has been added to the table"})
+    except Exception as e:
+        return jsonify({"message": "Adding data into the project_assets table failed: " + str(e)}), 400
+
+# Update a new record into the project_assets table using a PUT method.
+@app.put("/project-assets/<int:id>")
+@auth_required
+def update_project_assets():
+    data = request.get_json()
+    result = Project_Assets.query.get(id)
+
+    if not result:
+        return jsonify({"message": "That project_asset id was not found."}), 400
+
+    try:
+        result.project = data['project']
+        result.asset = data['asset']
+        db.session.commit()
+        return jsonify({"message": "The project_assets record with that ID has been updated"})
+    except Exception as e:
+        return jsonify({"message": "Updating data into the project_assets table failed: " + str(e)}), 400
+
+# Delete a record into the project_assets table.
+@app.delete("/project-assets/<int:id>")
+@auth_required
+def del_project_assets_record(id):
+    result = Assets.query.get(id)
+
+    if not result:
+        return jsonify({"message": f"The project_assets with ID {id} not found"}), 404
+
+    try:
+        db.session.delete(result)
+        db.session.commit()
+        return jsonify({"message": f"The project_assets with ID {id} was deleted successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Failed to delete project_assets record: {str(e)}"}), 500
 
 
 
@@ -251,10 +407,11 @@ def get_all_projects():
     return jsonify(project_dict), 200
 
 
+
 """""""""""""""""""""""""""""""""
 USER
 """""""""""""""""""""""""""""""""
-# GET all of a users information, minus their password from the database.
+# GET all of a single users information, minus their password from the users table.
 @app.get("/user/<int:user_id>")
 @auth_required
 def get_user_by_id(user_id):
@@ -269,7 +426,7 @@ def get_user_by_id(user_id):
     else:
         return Response("No user with that ID", 404)
 
-#PATCH a user record in the users database. Password is deleted from return json.
+# PATCH a user record in the users table. Password is deleted from return json.
 @app.patch("/user/<int:user_id>")
 @auth_required
 def patch_user(user_id):
@@ -301,7 +458,7 @@ def patch_user(user_id):
 
     return jsonify(result_dict), 200
 
-# Delete a user from the Users database.
+# Delete a user from the users table.
 @app.delete("/user/<int:user_id>")
 @auth_required
 def delete_user(user_id):
@@ -318,7 +475,7 @@ def delete_user(user_id):
         db.session.rollback()
         return jsonify({"error": f"Failed to delete user: {str(e)}"}), 500
 
-# Add a new user to the Users database, requires only first_name, second_name, email and password.
+# Add a new user to the users table, requires only first_name, second_name, email and password.
 @app.post("/user")
 @auth_required
 def add_new_user():
@@ -341,6 +498,8 @@ def add_new_user():
     except Exception as e:
         return jsonify({"message": "User not added"}), 404
     pass
+
+
 
 """""""""""""""""""""""""""""""""
 USERS
@@ -368,15 +527,6 @@ def get_all_user():
 
 
 
-
-#REGISTER
-@app.post("/user/register")
-def register_user():
-    pass
-
-
-
-
 """""""""""""""""""""""""""""""""
 SEARCH
 """""""""""""""""""""""""""""""""
@@ -388,10 +538,11 @@ def get_search(search_string):
     pass
 
 
+
 """""""""""""""""""""""""""""""""
 OTHER METHODS
 """""""""""""""""""""""""""""""""
-
+# TODO: Add validation for the assets and projects table when they deal with project_assets.
 
 
 """ 
