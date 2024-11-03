@@ -15,6 +15,13 @@ pip install flask
 pip install mysql-connector-python
 pip install flask_mysqlalchemy
 
-Relevent Terminal Commands:
+Relevant Terminal Commands:
 set FLASK_APP=main
 flask --app main run --debug
+
+
+Software Used:
+1. PyCharm
+2. Postman
+3. XAMMP - Apache, MySQL
+4. FireFox (Network Tool)
