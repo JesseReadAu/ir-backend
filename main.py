@@ -22,7 +22,8 @@ from datetime import datetime, timedelta, date
 from functools import wraps
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = "mysql+mysqlconnector://root@localhost/ir_db"
+
+app.config['SQLALCHEMY_DATABASE_URI'] = "mysql+mysqlconnector://root@localhost/ghibli"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
@@ -543,7 +544,14 @@ def get_search(search_string):
 OTHER METHODS
 """""""""""""""""""""""""""""""""
 # TODO: Add validation for the assets and projects table when they deal with project_assets.
-
+def manage_project_assets(project, asset):
+    # Check if input exists
+    result = Project_Assets.session.query(project_id=project, asset_id=asset).one()
+    if result:
+        pass
+    else:
+        pass
+    # Insert Record
 
 """ 
 # Old Validation method
