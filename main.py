@@ -2,7 +2,7 @@
 """
 Developer: Jesse Read
 GitHub: JesseReadAu
-Last Update: 2024/11/03
+Last Update: 2024/11/07
 Notes:  This is a RESTful backend being developed for the company IR as a proof of concept. It is interacted with
         from a REACT front end application.
 """
@@ -23,7 +23,7 @@ from functools import wraps
 
 app = Flask(__name__)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = "mysql+mysqlconnector://root@localhost/ghibli"
+app.config['SQLALCHEMY_DATABASE_URI'] = "mysql+mysqlconnector://root@localhost/ir_db"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
@@ -182,7 +182,6 @@ def try_to_login():
 
             pass_hashed = sha256(data["password"].encode("utf-8")).hexdigest()
 
-            # TODO: CHECK LOGIN DETAILS
             # This Session is a test session generated id, an update is required before live.
             session_id = sha256(("TestSessionID_" + data["email"]).encode("utf-8")).hexdigest()
 
@@ -191,7 +190,6 @@ def try_to_login():
             if not result:
                 return jsonify({"message": "Invalid Login"}), 400
 
-            #TODO: ORM?
             #Update database user with session
             db.session.execute(
                 text("UPDATE users SET session = :session_id, last_login= :last_login WHERE email = :email AND password = :pass_hashed"),
@@ -199,7 +197,6 @@ def try_to_login():
             )
             db.session.commit()
 
-            #TODO: Update Session
             return jsonify({"session": session_id}), 200
         else:
             return jsonify({"message": "Invalid Input"}), 400
@@ -343,11 +340,7 @@ PROJECT_ASSETS
 def add_new_project_assets(project, asset):
     try:
         manage_project_assets(project, asset)
-        """
-        project_assets = Project_Assets(project, asset)
-        db.session.add(project_assets)
-        db.session.commit()
-        """
+
         return jsonify({"message": "The project_assets data has been added to the table"})
     except Exception as e:
         return jsonify({"message": "Adding data into the project_assets table failed: " + str(e)}), 400
@@ -428,7 +421,7 @@ def get_user_by_id(user_id):
 
         return jsonify(result_dict), 200
     else:
-        return Response("No user with that ID", 404)
+        return jsonify({"message": "No user with that ID"}), 404
 
 # PATCH a user record in the users table. Password is deleted from return json.
 @app.patch("/user/<int:user_id>")
