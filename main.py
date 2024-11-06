@@ -342,9 +342,12 @@ PROJECT_ASSETS
 @auth_required
 def add_new_project_assets(project, asset):
     try:
+        manage_project_assets(project, asset)
+        """
         project_assets = Project_Assets(project, asset)
         db.session.add(project_assets)
         db.session.commit()
+        """
         return jsonify({"message": "The project_assets data has been added to the table"})
     except Exception as e:
         return jsonify({"message": "Adding data into the project_assets table failed: " + str(e)}), 400
@@ -531,27 +534,51 @@ def get_all_user():
 """""""""""""""""""""""""""""""""
 SEARCH
 """""""""""""""""""""""""""""""""
-# TODO: Create Methods
+# TODO: Expand on search, include filters.
 # Return all projects or assets
 @app.get('/search/<search_string>')
 @auth_required
 def get_search(search_string):
-    pass
+    try:
+        # Search for projects and assets with the given name
+        match_projects = db.session.query(Projects).filter(Projects.name.ilike(f"%{search_string}%")).all()
+        match_assets = db.session.query(Assets).filter(Assets.name.ilike(f"%{search_string}%")).all()
+
+        # Prepare the results
+        projects_result = [{"id": project.id, "name": project.name} for project in match_projects]
+        assets_result = [{"id": asset.id, "name": asset.name} for asset in match_assets]
+
+        return jsonify({
+            "matching_projects": projects_result,
+            "matching_assets": assets_result
+        })
+
+    except Exception as e:
+        return jsonify({"message": "Problem with get_search method", "error": str(e)})
+
+
 
 
 
 """""""""""""""""""""""""""""""""
 OTHER METHODS
 """""""""""""""""""""""""""""""""
-# TODO: Add validation for the assets and projects table when they deal with project_assets.
+# TODO: Review where this can be used further project_assets.
+# Check if input exists, if so update it, else create it.
 def manage_project_assets(project, asset):
-    # Check if input exists
-    result = Project_Assets.session.query(project_id=project, asset_id=asset).one()
-    if result:
-        pass
-    else:
-        pass
-    # Insert Record
+    try:
+        check_for_record = db.session.query(project_id=project, asset_id=asset).one_or_none()
+        if check_for_record:
+            check_for_record.project_id = project
+            check_for_record.asset_id = asset
+        else:
+            new_record = Project_Assets(project_id=project, asset_id=asset)
+            db.session.add(new_record)
+        db.session.commit()
+        return True
+    except Exception as e:
+        return jsonify({"message": "Problem with manage_project_assets method"})
+
 
 """ 
 # Old Validation method
