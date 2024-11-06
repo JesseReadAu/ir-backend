@@ -10,10 +10,11 @@ Start-up Guide (Debugging, NOT FOR LIVE):
 2. Install required packages, listed below.
 3. Enter the following command "flask --app main run --debug"
 
-Packages Required:
-pip install flask
-pip install mysql-connector-python
-pip install flask_mysqlalchemy
+Packages Required (and command for my team members):
+1. pip install flask
+2. pip install mysql-connector-python
+3. pip install flask_mysqlalchemy
+
 
 Relevant Terminal Commands:
 set FLASK_APP=main
