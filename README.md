@@ -10,7 +10,7 @@ Notes:  This is a RESTful backend being developed for the company IR as a proof 
 2. Install required packages, listed below.
 3. Enter the following command "flask --app main run --debug"
 
-# **Packages Required (and command for my team members):**
+# **Packages Required (Commands for my team members):**
 1. pip install flask
 2. pip install mysql-connector-python
 3. pip install flask_mysqlalchemy
