@@ -16,28 +16,37 @@ from models.projects import Projects
 from db import db
 from datetime import datetime
 from functools import wraps
+from flask_cors import CORS
 
 app = Flask(__name__)
-
 app.config['SQLALCHEMY_DATABASE_URI'] = "mysql+mysqlconnector://root@localhost/ir_db"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
+
+# CORS - Allow specific origins to all routes
+CORS(app, resources={
+    r"/*": {  # Apply CORS to all routes
+        "origins": ["https://www.google.com.au", "http://localhost", "http://127.0.0.1"]
+    }
+})
 
 if __name__ == "__name__":
     with app.app_context():
         db.create_all()
     app.run()
 
+
+
 """""""""""""""""""""""""""""""""
 DECORATORS
 """""""""""""""""""""""""""""""""
-#Decorator to check session prior to function execution.
+#Decorator to check session in header prior to function execution.
 def auth_required(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        data = request.get_json()
-        session_id = data.get('session')
+        # Retrieve session ID from the Authorization header
+        session_id = request.headers.get('session')
 
         if not session_id:
             return jsonify({"message": "User needs to login"}), 401
@@ -216,7 +225,7 @@ def log_user_out():
         return jsonify({"message": "Invalid Input"}), 400
 
 # Register a user into the users table.
-#TODO: Registrations needs to be tested.
+#TODO: Semi-tested, needs to test again.
 @app.post("/user/register")
 def register_user():
     if request.data:
@@ -561,8 +570,6 @@ def get_search(search_string):
 
 
 
-
-
 """""""""""""""""""""""""""""""""
 OTHER METHODS
 """""""""""""""""""""""""""""""""
@@ -583,30 +590,16 @@ def manage_project_assets(project, asset):
         return jsonify({"message": "Problem with manage_project_assets method"})
 
 
-""" 
-# Old Validation method
-# Validate user session
-def validate_user():
-    data = request.get_json()
-    session_id = data.get('session')
 
-    if not session_id:
-        return False, jsonify({"message": "User needs to login"}), 404
+"""""""""""""""""""""""""""""""""
+DEBUG
+"""""""""""""""""""""""""""""""""
+# Print the origin to the application console.
+@app.before_request
+def log_origin():
+    print(f"Origin: {request.headers.get('Origin')}")
 
-    # Check session against DB
-    result = Users.query.filter_by(session=session_id).first()
-    if not result:
-        return False, jsonify({"message": "User needs to login"}), 404
-
-    # Validate session date
-    if result.last_login == datetime.now().strftime("%Y-%m-%d"):
-        return True, None
-    else:
-        # Invalidate outdated session
-        db.session.execute(
-            text("UPDATE users SET session = NULL WHERE session = :session"),
-            {"session": session_id}
-        )
-        db.session.commit()
-        return False, jsonify({"message": "Session expired, please log in again"}), 404
-"""
+# Homepage, good test for CORS.
+@app.get("/")
+def hello_world():
+   return jsonify({"message": "Hello, cross-origin accepted people!"}), 200
