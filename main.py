@@ -1,24 +1,20 @@
-#INFORMATION
+# INFORMATION
 """
 Developer: Jesse Read
 GitHub: JesseReadAu
-Last Update: 2024/11/07
+Last Update: 2024/11/13
 Notes:  This is a RESTful backend being developed for the company IR as a proof of concept. It is interacted with
         from a REACT front end application.
 """
-
-
-from flask import Flask, request, session, Response, jsonify
-from flask_sqlalchemy import SQLAlchemy
+from flask import Flask, request, Response, jsonify
 from sqlalchemy import text, delete
-import json
 from hashlib import sha256
 from models.users import Users
 from models.assets import Assets
 from models.project_assets import Project_Assets
 from models.projects import Projects
 from db import db
-from datetime import datetime, timedelta, date
+from datetime import datetime
 from functools import wraps
 
 app = Flask(__name__)
@@ -291,11 +287,11 @@ def patch_project(project_id):
     if "type" in data:
         result.category = data["type"]
     if "client" in data:
-        result.filetype = data["filetype"]
+        result.client = data["client"]
     if "data_start" in data:
-        result.filesize = data["filesize"]
+        result.date_start = data["date_start"]
     if "date_end" in data:
-        result.link = data["link"]
+        result.date_end = data["date_end"]
     if "user_id" in data:
         result.user_id = data["user_id"]
 
@@ -389,19 +385,33 @@ PROJECTS
 @auth_required
 def get_all_projects():
     result = Projects.query.all()
+    """
     project_dict = {
         row.id: {
             "id": row.id,
             "name": row.name,
-            "category": row.category,
-            "filetype": row.filetype,
-            "filesize": row.filesize,
-            "link": row.link,
-            "screenshot": row.screenshot,
+            "type": row.type,
+            "client": row.client,
+            "date_start": row.date_start,
+            "date_end": row.date_end,
             "user_id": row.user_id
         } for row in result
     }
-    return jsonify(project_dict), 200
+    """
+    # Create a list as requested by front end developer
+    project_list = [
+        {
+            "id": row.id,
+            "name": row.name,
+            "type": row.type,
+            "client": row.client,
+            "date_start": row.date_start,
+            "date_end": row.date_end,
+            "user_id": row.user_id
+        } for row in result
+    ]
+
+    return jsonify(project_list), 200
 
 
 
