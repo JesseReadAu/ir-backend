@@ -27,7 +27,7 @@ db.init_app(app)
 # CORS - Allow specific origins to all routes
 CORS(app, resources={
     r"/*": {  # Apply CORS to all routes
-        "origins": ["https://www.google.com.au", "http://localhost", "http://127.0.0.1"]
+        "origins": ["https://www.google.com.au", "http://localhost", "http://localhost:3000", "http://127.0.0.1", "http://127.0.0.1:3000"]
     }
 })
 
@@ -202,7 +202,7 @@ def try_to_login():
             )
             db.session.commit()
 
-            return jsonify({"session": session_id}), 200
+            return jsonify({"success": True, "session": session_id}), 200
         else:
             return jsonify({"message": "Invalid Input"}), 400
     else:
@@ -297,7 +297,7 @@ def patch_project(project_id):
         result.category = data["type"]
     if "client" in data:
         result.client = data["client"]
-    if "data_start" in data:
+    if "date_start" in data:
         result.date_start = data["date_start"]
     if "date_end" in data:
         result.date_end = data["date_end"]
@@ -351,7 +351,7 @@ def add_new_project_assets(project, asset):
         return jsonify({"message": "Adding data into the project_assets table failed: " + str(e)}), 400
 
 # Update a new record into the project_assets table using a PUT method.
-@app.put("/project-assets/<int:id>")
+@app.patch("/project-assets/<int:id>")
 @auth_required
 def update_project_assets():
     data = request.get_json()
