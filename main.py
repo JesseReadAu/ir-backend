@@ -318,14 +318,14 @@ def add_new_project():
         name = data.get("name")
         type = data.get("type") or ""
         client = data.get("client") or ""
-        data_start = data.get("data_start") or ""
+        date_start = data.get("date_start") or ""
         date_end = data.get("date_end") or ""
         user_id = data.get("user_id") or ""
 
         if not name:
             return jsonify({"message": "Project name required"}), 400
 
-        new_project = Projects(name=name, type=type, client=client, data_start=data_start, date_end=date_end, user_id=user_id)
+        new_project = Projects(name=name, type=type, client=client, date_start=date_start, date_end=date_end, user_id=user_id)
         db.session.add(new_project)
         db.session.commit()
         return jsonify({"message": "New project added"}), 201
