@@ -266,16 +266,15 @@ PROJECT
 @app.delete("/project/<int:project_id>")
 @auth_required
 def delete_project(project_id):
+    project = Projects.query.get(project_id)
 
-    asset = Assets.query.get(project_id)
-
-    if not asset:
-        return jsonify({"message": f"Project with ID {project_id} not found"}), 404
+    if not project:
+        return jsonify({"message": f"Project with id {project_id} not found"}), 404
 
     try:
-        db.session.delete(asset)
+        db.session.delete(project)
         db.session.commit()
-        return jsonify({"message": f"Project with ID {project_id} deleted successfully"}), 200
+        return jsonify({"message": f"Project with id {project_id} deleted successfully"}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": f"Failed to delete project: {str(e)}"}), 500
