@@ -159,6 +159,9 @@ ASSETS
 @auth_required
 def get_all_assets():
     result = Assets.query.all()
+
+    """
+    # Dict changed to List below as requested by front end.
     asset_dict = {
         row.id: {
             "id": row.id,
@@ -172,6 +175,21 @@ def get_all_assets():
         } for row in result
     }
     return jsonify(asset_dict), 200
+    """
+
+    asset_list = [
+        {
+            "id": row.id,
+            "name": row.name,
+            "category": row.category,
+            "filetype": row.filetype,
+            "filesize": row.filesize,
+            "link": row.link,
+            "screenshot": row.screenshot,
+            "user_id": row.user_id
+        } for row in result
+    ]
+    return jsonify(asset_list), 200
 
 
 
@@ -202,7 +220,9 @@ def try_to_login():
             )
             db.session.commit()
 
-            return jsonify({"success": True, "session": session_id}), 200
+            name = f"{result.first_name} {result.last_name}"
+
+            return jsonify({"success": True, "session": session_id, "name": name}), 200
         else:
             return jsonify({"message": "Invalid Input"}), 400
     else:
