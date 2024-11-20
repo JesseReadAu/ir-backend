@@ -357,7 +357,47 @@ def add_new_project():
 """""""""""""""""""""""""""""""""
 PROJECT_ASSETS
 """""""""""""""""""""""""""""""""
-# TODO: All project_assets methods have not been tested yet.
+# Gets the integar values from the database with no filtering.
+@app.get("/project-assets")
+@auth_required
+def get_project_assets_all():
+    result = Project_Assets.query.all()
+
+    project_assets = [
+        {
+            "id": row.id,
+            "project_id": row.project_id,
+            "asset_id": row.asset_id
+        } for row in result
+    ]
+
+    return jsonify(project_assets), 200
+
+# Gets the assets information for all linked assets based on a projects id.
+@app.get("/project-assets/<int:project>")
+@auth_required
+def get_project_assets_by_project(project):
+    result = (
+        db.session.query(Assets)
+        .join(Project_Assets, Project_Assets.asset_id == Assets.id)
+        .filter(Project_Assets.project_id == project)
+        .all()
+    )
+
+    assets = [
+        {
+            "id": asset.id,
+            "name": asset.name,
+            "category": asset.category,
+            "filetype": asset.filetype,
+            "filesize": asset.filesize,
+            "link": asset.link,
+            "screenshot": asset.screenshot,
+            "user_id": asset.user_id,
+        } for asset in result
+    ]
+    return jsonify(assets), 200
+
 # Add a new record into the project_assets table.
 @app.post("/project-assets/<int:project>/<int:asset>")
 @auth_required
