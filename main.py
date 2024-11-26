@@ -2,7 +2,7 @@
 """
 Developer: Jesse Read
 GitHub: JesseReadAu
-Last Update: 2024/11/13
+Last Update: 2024/11/26
 Notes:  This is a RESTful backend being developed for the company IR as a proof of concept. It is interacted with
         from a REACT front end application.
 """
@@ -299,7 +299,7 @@ def delete_project(project_id):
         db.session.rollback()
         return jsonify({"error": f"Failed to delete project: {str(e)}"}), 500
 
-#PATCH a project in the projects table.
+# PATCH a project in the projects table.
 @app.patch("/project/<int:project_id>")
 @auth_required
 def patch_project(project_id):
@@ -315,7 +315,7 @@ def patch_project(project_id):
     if "type" in data:
         result.category = data["type"]
     if "client" in data:
-        result.client = data["client"]
+        result.client =     data["client"]
     if "date_start" in data:
         result.date_start = data["date_start"]
     if "date_end" in data:
@@ -521,7 +521,7 @@ def patch_user(user_id):
     if "password" in data:
         result.password = sha256((data["password"]).encode("utf-8")).hexdigest()
     if "enabled" in data:
-        result.password = data["enabled"]
+        result.enabled = data["enabled"]
 
     db.session.commit()
 
@@ -532,6 +532,28 @@ def patch_user(user_id):
 
 
     return jsonify(result_dict), 200
+
+# PATCH a user to be enabled or disabled with a 0 or 1
+@app.patch("/user/enable/<int:user_id>")
+@auth_required
+def enable_user(user_id):
+    result = Users.query.filter_by(id=user_id).first()
+
+    if not result:
+        return Response("No user found", 404)
+
+    data = request.get_json()
+
+    if "enabled" in data:
+        if "enabled" == 0 or "enabled" == 1:
+            result.enabled = data["enabled"]
+            db.session.commit()
+            return jsonify({"success": "true", "message": "User has been enabled"}), 200
+
+    return jsonify({"success": "false", "message": "User not found"}), 404
+
+
+
 
 # Delete a user from the users table.
 @app.delete("/user/<int:user_id>")
