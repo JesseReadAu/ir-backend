@@ -606,8 +606,9 @@ USERS
 @auth_required
 def get_all_user():
     result = Users.query.all()
-    users_dict = {row.id: {"first_name": row.first_name, "last_name": row.last_name, "email": row.email, "session": row.session, "enabled": row.enabled} for row in result}
-    """
+    # Dict removed due to front end wanting a list.
+    #users_dict = {row.id: {"first_name": row.first_name, "last_name": row.last_name, "email": row.email, "session": row.session, "enabled": row.enabled} for row in result}
+
     users_list = [
         {
             "id": row.id,
@@ -619,9 +620,7 @@ def get_all_user():
         }
         for row in result
     ]
-    """
-    return jsonify(users_dict), 200
-
+    return jsonify(users_list), 200
 
 
 """""""""""""""""""""""""""""""""
