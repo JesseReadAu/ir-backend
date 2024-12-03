@@ -2,7 +2,7 @@
 """
 Developer: Jesse Read
 GitHub: JesseReadAu
-Last Update: 2024/11/26
+Last Update: 2024/12/03
 Notes:  This is a RESTful backend being developed for the company IR as a proof of concept. It is interacted with
         from a REACT front end application.
 """
@@ -19,7 +19,7 @@ from functools import wraps
 from flask_cors import CORS
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = "mysql+mysqlconnector://root@localhost/ir_db"
+app.config['SQLALCHEMY_DATABASE_URI'] = "mysql+mysqlconnector://root@localhost/ir_db" # Localhost Details, Not live
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
@@ -31,17 +31,17 @@ CORS(app, resources={
     }
 })
 
-if __name__ == "__name__":
+if __name__ == "__main__":
     with app.app_context():
         db.create_all()
-    app.run()
+    app.run() # Start Flask App.
 
 
 
 """""""""""""""""""""""""""""""""
 DECORATORS
 """""""""""""""""""""""""""""""""
-#Decorator to check session in header prior to function execution.
+# Decorator to check session in header prior to function execution.
 def auth_required(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -208,10 +208,16 @@ def try_to_login():
             # This Session is a test session generated id, an update is required before live.
             session_id = sha256(("TestSessionID_" + data["email"]).encode("utf-8")).hexdigest()
 
-            #Check if email and password at right
             result = Users.query.filter_by(email=data.get("email"), password=pass_hashed).first()
+
+            #Check if email and password at right
             if not result:
                 return jsonify({"message": "Invalid Login"}), 400
+
+            # A check was requested so a user cannot be logged in if they are not enabled instead of a check later
+            # Previously a message or limited privileges where going to be provided to a user not enabled.
+            if not result.enabled:
+                return jsonify({"success": False, "message": "Your account has not been enabled yet."}), 403
 
             #Update database user with session
             db.session.execute(
